@@ -1,0 +1,8 @@
+[
+  "plainaddress",
+  "@no-local-part.test",
+  "no-at-sign.test",
+  "trailing-dot@test.",
+  "two@@at.test",
+  "space in@test.com"
+]

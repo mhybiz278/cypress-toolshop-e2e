@@ -1,0 +1,7 @@
+[
+  { "value": "cash-on-delivery",  "label": "Cash on delivery",  "requiresDetails": false },
+  { "value": "bank-transfer",     "label": "Bank transfer",     "requiresDetails": true },
+  { "value": "credit-card",       "label": "Credit card",       "requiresDetails": true },
+  { "value": "gift-card",         "label": "Gift card",         "requiresDetails": true },
+  { "value": "buy-now-pay-later", "label": "Buy now pay later", "requiresDetails": true }
+]
