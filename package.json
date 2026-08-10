@@ -1,0 +1,31 @@
+{
+  "name": "cypress-toolshop-e2e",
+  "version": "1.0.0",
+  "description": "Cypress end-to-end automation framework for the Toolshop (Practice Software Testing) demo application — Page Object Model, service layer, API seeding, CI-ready.",
+  "author": "Mhyli Jade C. Bizares",
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "cy:open": "cypress open",
+    "cy:run": "cypress run",
+    "test": "cypress run",
+    "test:smoke": "cypress run --env grepTags=@smoke",
+    "test:regression": "cypress run --env grepTags=@regression",
+    "test:api": "cypress run --spec 'cypress/e2e/api/**/*.cy.js'",
+    "test:ui": "cypress run --spec 'cypress/e2e/!(api)/**/*.cy.js'",
+    "test:headed": "cypress run --headed --no-exit",
+    "report:merge": "mochawesome-merge cypress/reports/*.json > cypress/reports/merged.json",
+    "report:generate": "marge cypress/reports/merged.json -f report -o cypress/reports/html",
+    "report": "npm run report:merge && npm run report:generate",
+    "lint": "eslint ."
+  },
+  "devDependencies": {
+    "@faker-js/faker": "^9.0.3",
+    "cypress": "^14.5.0",
+    "cypress-mochawesome-reporter": "^3.8.2",
+    "eslint": "^8.57.0",
+    "eslint-plugin-cypress": "^3.4.0",
+    "mochawesome-merge": "^4.3.0",
+    "mochawesome-report-generator": "^6.2.0"
+  }
+}

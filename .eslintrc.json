@@ -1,0 +1,12 @@
+{
+  "env": { "browser": true, "node": true, "es2022": true, "cypress/globals": true },
+  "parserOptions": { "ecmaVersion": 2022, "sourceType": "module" },
+  "plugins": ["cypress"],
+  "extends": ["eslint:recommended", "plugin:cypress/recommended"],
+  "rules": {
+    "cypress/no-unnecessary-waiting": "error",
+    "cypress/assertion-before-screenshot": "warn",
+    "no-unused-vars": ["error", { "argsIgnorePattern": "^_" }]
+  },
+  "ignorePatterns": ["node_modules/", "cypress/reports/", "cypress/artifacts/"]
+}
