@@ -1,0 +1,94 @@
+name: E2E
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    # Nightly full regression against the deployed demo instance.
+    - cron: '0 17 * * *'   # 05:00 NZST
+  workflow_dispatch:
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: npm }
+      - run: npm ci
+      - run: npm run lint
+
+  # API specs are fast and have no browser dependency, so they gate the
+  # expensive UI matrix: if the contract is broken, don't burn 4 containers.
+  api:
+    runs-on: ubuntu-latest
+    needs: lint
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: npm }
+      - name: Start application stack
+        run: docker compose up -d --wait
+      - uses: cypress-io/github-action@v6
+        with:
+          spec: cypress/e2e/api/**/*.cy.js
+          browser: electron
+        env:
+          CYPRESS_BASE_URL: http://localhost:4200
+          CYPRESS_API_URL: http://localhost:8091
+
+  e2e:
+    runs-on: ubuntu-latest
+    needs: api
+    strategy:
+      fail-fast: false
+      matrix:
+        # Split by suite rather than by arbitrary file count: a failure tells
+        # you which product area broke before you open the report.
+        suite: [auth, catalogue, cart, checkout, account]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: npm }
+      - name: Start application stack
+        run: docker compose up -d --wait
+      - uses: cypress-io/github-action@v6
+        with:
+          spec: cypress/e2e/${{ matrix.suite }}/**/*.cy.js
+          browser: chrome
+        env:
+          CYPRESS_BASE_URL: http://localhost:4200
+          CYPRESS_API_URL: http://localhost:8091
+      - name: Upload failure artefacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: artifacts-${{ matrix.suite }}
+          path: cypress/artifacts
+          retention-days: 7
+      - name: Upload raw report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: report-${{ matrix.suite }}
+          path: cypress/reports/*.json
+          retention-days: 7
+
+  report:
+    runs-on: ubuntu-latest
+    needs: e2e
+    if: always()
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: npm }
+      - run: npm ci
+      - uses: actions/download-artifact@v4
+        with: { pattern: report-*, path: cypress/reports, merge-multiple: true }
+      - run: npm run report
+      - uses: actions/upload-artifact@v4
+        with:
+          name: html-report
+          path: cypress/reports/html
+          retention-days: 14
