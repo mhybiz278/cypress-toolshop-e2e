@@ -1,0 +1,8 @@
+{
+  "_comment": "Serious and critical WCAG 2.1 A/AA violations the application currently has, per page, as { ruleId: nodeCount }. A new rule or a higher count fails the build. A lower count fails too — lower the number here when something is fixed, so the improvement is locked in and cannot regress back silently. Written up in docs/DEFECT-LOG.md as TOOL-2105 and TOOL-2106.",
+  "catalogue": { "list": 3 },
+  "product-detail": {},
+  "cart": {},
+  "sign-in": { "button-name": 1 },
+  "registration": { "button-name": 1, "list": 1 }
+}
