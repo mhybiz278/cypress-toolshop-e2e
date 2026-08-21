@@ -1,36 +1,42 @@
-const { invoicesPage, productDetailPage, cartPage, checkoutPage, header } = require('../../support/pages');
-const { productService } = require('../../support/services');
-const { newAddress } = require('../../support/helpers/dataFactory');
+const { invoicesPage } = require('../../support/pages');
+const { orderService } = require('../../support/services');
+const { signedInAsNewCustomer } = require('../../support/helpers/accounts');
 
+/**
+ * The order is seeded over the API rather than driven through the five-screen
+ * checkout wizard. These specs are about the invoice screen: paying eight
+ * seconds a test to reach it, and inheriting every checkout failure as an
+ * invoice failure, would tell a reader nothing about invoices.
+ */
 describe('Invoices', { tags: ['@account', '@regression'] }, () => {
   beforeEach(() => {
-    cy.loginByApi(Cypress.env('seededCustomerEmail'), Cypress.env('seededCustomerPassword'));
+    signedInAsNewCustomer();
+  });
+
+  it('shows nothing for a customer who has never ordered', () => {
+    invoicesPage.visit();
+
+    invoicesPage.shouldBeEmpty();
   });
 
   it('lists an invoice after an order is placed', () => {
-    productService.firstPurchasable().then((product) => {
-      productDetailPage.visitById(product.id).addToCart();
-      header.goToCart();
-      cartPage.proceedToCheckout();
-      checkoutPage.proceedAfterSignIn();
-      checkoutPage.fillAddress(newAddress()).proceedToPayment();
-      checkoutPage.selectPaymentMethod('cash-on-delivery').confirmOrder();
-      checkoutPage.shouldShowPaymentSuccess();
-
+    orderService.placeOrder().then((invoice) => {
       invoicesPage.visit();
 
       invoicesPage.shouldHaveInvoices();
+      invoicesPage.rows.should('contain.text', invoice.invoice_number);
     });
   });
 
-  it('opens an invoice and shows its number', () => {
-    invoicesPage.visit();
-    invoicesPage.shouldHaveInvoices();
+  it('opens an invoice and shows the number and total the API holds', () => {
+    orderService.placeOrder().then((invoice) => {
+      invoicesPage.visit();
 
-    invoicesPage.openFirstInvoice();
+      invoicesPage.openFirstInvoice();
 
-    invoicesPage.el('invoice-number').should('not.have.text', '');
-    invoicesPage.el('total').should('exist');
+      invoicesPage.invoiceNumber().should('eq', invoice.invoice_number);
+      invoicesPage.total().should('contain', Number(invoice.total).toFixed(2));
+    });
   });
 
   it('is not reachable when signed out', () => {

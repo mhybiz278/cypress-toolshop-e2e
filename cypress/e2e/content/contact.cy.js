@@ -1,8 +1,10 @@
-const { contactPage } = require('../support/pages');
-const { newContactMessage } = require('../support/helpers/dataFactory');
+const { contactPage } = require('../../support/pages');
+const { newContactMessage } = require('../../support/helpers/dataFactory');
 
 describe('Contact form', { tags: ['@content', '@regression'] }, () => {
-  beforeEach(() => contactPage.visit());
+  beforeEach(() => {
+    contactPage.visit();
+  });
 
   it('submits a complete enquiry', () => {
     contactPage.sendMessage(newContactMessage());

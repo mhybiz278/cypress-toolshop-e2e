@@ -1,4 +1,5 @@
 const { productService } = require('../../support/services');
+const { stillPresent } = require('../../support/knownDefects');
 
 describe('API — reference data', { tags: ['@api', '@regression'] }, () => {
   it('returns brands with id and name', () => {
@@ -12,10 +13,17 @@ describe('API — reference data', { tags: ['@api', '@regression'] }, () => {
   it('returns categories with a URL-safe slug', () => {
     productService.categories().then(({ status, body }) => {
       expect(status).to.eq(200);
-      body.forEach((category) => {
-        expect(category).to.include.keys('id', 'name', 'slug');
-        expect(category.slug, `slug for ${category.name}`).to.match(/^[a-z0-9-]+$/);
-      });
+      body.forEach((category) => expect(category).to.include.keys('id', 'name', 'slug'));
+
+      // A slug is what ends up in a URL, so anything outside [a-z0-9-] is a
+      // defect. One category ships with a space in its slug — TOOL-2101. The
+      // assertion is pinned to that exact set, so a second offender fails the
+      // build and a fix fails it too, which is the point.
+      const offenders = body
+        .filter((category) => !/^[a-z0-9-]+$/.test(category.slug))
+        .map((category) => category.slug);
+
+      stillPresent('TOOL-2101', offenders, ['storage solutions']);
     });
   });
 

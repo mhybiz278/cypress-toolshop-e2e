@@ -12,7 +12,22 @@ class InvoicesPage extends BasePage {
 
   shouldHaveInvoices() { this.rows.should('have.length.greaterThan', 0); return this; }
 
-  invoiceNumber() { return this.el('invoice-number').invoke('text'); }
+  /** An empty list renders the table without rows, not without the table. */
+  shouldBeEmpty() {
+    cy.get('body').find('table tbody tr').should('have.length', 0);
+    return this;
+  }
+
+  /** The detail screen renders every field as a readonly input, not as text. */
+  invoiceNumber() { return this.el('invoice-number').invoke('val'); }
+
+  /**
+   * Three different fields on the invoice detail screen carry
+   * `data-test="total"` — subtotal, discount and total — so the hook cannot
+   * identify one of them. The id is the only thing that can, and the fallback
+   * is quarantined here rather than repeated in the specs.
+   */
+  total() { return cy.get('input#total').invoke('val'); }
 }
 
 module.exports = new InvoicesPage();
