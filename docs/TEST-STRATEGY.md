@@ -35,6 +35,7 @@ Coverage follows money and blast radius, not code structure.
 | Account & invoices | Support load, not lost sales | Low | **P2** | Automated, regression |
 | Contact form | Minor | Low | **P2** | Automated, regression |
 | Comparison, rentals | Cosmetic | Low | **P3** | Exploratory only |
+| Accessibility of key journeys | Legal exposure, excluded customers | Medium | **P1** | Automated against a baseline |
 
 P0 journeys are the `@smoke` tag and gate every merge. Everything else runs nightly.
 
@@ -78,7 +79,17 @@ Base URLs come from environment variables, so no code change is needed to retarg
 
 **Exit:** all P0 specs pass; no open P1 defects on a P0 journey; any quarantined test has a ticket and an owner.
 
-## 9. Flakiness policy
+## 9. Known application defects
+
+The suite has found six defects that are not going to be fixed, because the application under test belongs to someone else. That creates the situation every real team eventually faces: a genuine failure nobody is going to action this sprint.
+
+The wrong answers are to delete the assertion (coverage silently lost), to skip the test (asserts nothing, tells a reader nothing), or to leave the build red (which trains everyone to ignore red). The answer used here is a **quarantine with an expiry**: the defect is written up in [`DEFECT-LOG.md`](DEFECT-LOG.md), recorded in `knownDefects.js` with the exact behaviour observed, and asserted as it actually behaves — so a *second* instance fails the build, and so does a fix. The entry cannot outlive the defect.
+
+Accessibility uses the same contract per page, as a count of axe violations by rule. The baseline can only go down.
+
+On a team, each of these carries a ticket and an owner, and that ticket id is the id in the log.
+
+## 10. Flakiness policy
 
 One retry in CI, zero locally. A spec that fails intermittently is treated as a defect in the test, not noise:
 
@@ -88,10 +99,10 @@ One retry in CI, zero locally. A spec that fails intermittently is treated as a 
 
 Flake tolerance is how suites die: every unexplained re-run teaches the team that red means "try again".
 
-## 10. Reporting
+## 11. Reporting
 
-Mochawesome HTML per run, merged across parallel jobs, with embedded screenshots on failure. What matters to the team is the trend — pass rate over time and the flaky-test list — rather than any single run.
+Mochawesome HTML per run with embedded screenshots on failure, published to GitHub Pages so the latest result is a link rather than a download. Every run also writes a Markdown summary to the workflow page, so "what broke?" is answered without opening an artefact. What matters to the team is the trend — pass rate over time and the flaky-test list — rather than any single run.
 
-## 11. Defect reporting standard
+## 12. Defect reporting standard
 
-Every defect raised from this suite carries: environment and build, exact reproduction steps, expected versus actual, severity with a stated rationale, and evidence. A sample is in [`docs/SAMPLE-BUG-REPORT.md`](SAMPLE-BUG-REPORT.md).
+Every defect raised from this suite carries: environment and build, exact reproduction steps, expected versus actual, severity with a stated rationale, and evidence — plus, where the cause is visible in the source, the analysis that names it. Six worked examples are in [`DEFECT-LOG.md`](DEFECT-LOG.md).
