@@ -17,6 +17,10 @@ class CheckoutPage extends BasePage {
   }
 
   continueAsGuest({ email, firstName, lastName }) {
+    // The guest form sits behind a Bootstrap tab that carries no test hook.
+    // The structural selector is quarantined here, in one method, rather than
+    // spread across the three guest specs.
+    cy.get('a[href="#guest-tab"]').click();
     this.fill('guest-email', email);
     this.fill('guest-first-name', firstName);
     this.fill('guest-last-name', lastName);
@@ -27,12 +31,26 @@ class CheckoutPage extends BasePage {
   proceedAsGuest() { return this.click('proceed-2-guest'); }
 
   // --- Step 3: billing address ----------------------------------------
+  /**
+   * Country and postcode are the only address fields a customer really
+   * chooses. The application looks the postcode up and fills street, city and
+   * state itself, and the API re-runs that same lookup when the order is
+   * placed — rejecting any address whose city or state contradicts it. So a
+   * test that types its own city is driving the form into a state no real
+   * customer can reach, and the order it places will 422.
+   */
   fillAddress(address) {
     if (address.country) this.select('country', address.country);
-    this.fill('street', address.street);
     this.fill('postal_code', address.postalCode);
-    this.fill('city', address.city);
-    this.fill('state', address.state);
+    this.fill('house_number', address.houseNumber);
+    return this.waitForPostcodeLookup();
+  }
+
+  /** The lookup has finished when it has populated the locality fields. */
+  waitForPostcodeLookup() {
+    this.el('postcode-lookup-loading').should('not.exist');
+    this.el('city').should('not.have.value', '');
+    this.el('state').should('not.have.value', '');
     return this;
   }
 
@@ -73,7 +91,28 @@ class CheckoutPage extends BasePage {
 
   confirmOrder() { return this.click('finish'); }
 
-  shouldShowPaymentSuccess() {
+  /** The address step is still the one on screen. */
+  shouldBeOnAddressStep() {
+    this.el('proceed-3').should('be.visible');
+    return this;
+  }
+
+  /**
+   * The wizard disables the confirm button while the payment form is invalid,
+   * so "cannot submit" is asserted on the control the customer would press.
+   */
+  shouldNotAllowConfirmation() {
+    this.el('finish').should('be.disabled');
+    return this;
+  }
+
+  /**
+   * The banner reports the outcome of the *payment check*, not that an order
+   * was created — those are two different requests, and only the first has
+   * happened when this appears. `checkout/order-creation.cy.js` covers the
+   * difference; nothing else in the suite should read this as "order placed".
+   */
+  shouldShowPaymentAccepted() {
     this.el('payment-success-message', { timeout: 15000 }).should('be.visible');
     return this;
   }

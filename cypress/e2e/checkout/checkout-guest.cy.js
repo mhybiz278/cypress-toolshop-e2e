@@ -25,7 +25,7 @@ describe('Checkout — guest', { tags: ['@checkout', '@regression'] }, () => {
     checkoutPage.fillAddress(newAddress()).proceedToPayment();
     checkoutPage.selectPaymentMethod('cash-on-delivery').confirmOrder();
 
-    checkoutPage.shouldShowPaymentSuccess();
+    checkoutPage.shouldShowPaymentAccepted();
   });
 
   it('requires the guest email before continuing', () => {

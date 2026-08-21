@@ -1,6 +1,7 @@
 const { productDetailPage, cartPage, checkoutPage, header } = require('../../support/pages');
 const { productService } = require('../../support/services');
-const { newAddress, newCreditCard, newBankDetails } = require('../../support/helpers/dataFactory');
+const { newAddress, newCreditCard, newBankDetails, newGiftCard } = require('../../support/helpers/dataFactory');
+const { signedInAsNewCustomer } = require('../../support/helpers/accounts');
 
 /**
  * Data-driven: one scenario per payment method rather than five near-identical
@@ -10,13 +11,13 @@ const METHODS = [
   { value: 'cash-on-delivery', label: 'Cash on delivery', fill: () => {} },
   { value: 'bank-transfer', label: 'Bank transfer', fill: () => checkoutPage.fillBankTransfer(newBankDetails()) },
   { value: 'credit-card', label: 'Credit card', fill: () => checkoutPage.fillCreditCard(newCreditCard()) },
-  { value: 'gift-card', label: 'Gift card', fill: () => checkoutPage.fillGiftCard({ number: 'GC1234567', validationCode: '1234' }) },
+  { value: 'gift-card', label: 'Gift card', fill: () => checkoutPage.fillGiftCard(newGiftCard()) },
   { value: 'buy-now-pay-later', label: 'Buy now pay later', fill: () => checkoutPage.selectInstalments(6) }
 ];
 
 describe('Checkout — payment methods', { tags: ['@checkout', '@regression'] }, () => {
   beforeEach(() => {
-    cy.loginByApi(Cypress.env('seededCustomerEmail'), Cypress.env('seededCustomerPassword'));
+    signedInAsNewCustomer();
     productService.firstPurchasable().then((product) => {
       productDetailPage.visitById(product.id).addToCart();
       header.goToCart();
@@ -32,7 +33,7 @@ describe('Checkout — payment methods', { tags: ['@checkout', '@regression'] },
       fill();
       checkoutPage.confirmOrder();
 
-      checkoutPage.shouldShowPaymentSuccess();
+      checkoutPage.shouldShowPaymentAccepted();
     });
   });
 

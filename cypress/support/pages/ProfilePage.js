@@ -6,10 +6,18 @@ class ProfilePage extends BasePage {
   updateField(hook, value) { return this.fill(hook, value); }
   saveProfile() { return this.click('update-profile-submit'); }
 
+  /**
+   * The API validates `new_password` as `confirmed`, so the confirmation field
+   * is not optional decoration — omitting it leaves the form invalid and the
+   * password silently unchanged.
+   */
   changePassword(currentPassword, newPassword) {
     this.fill('current-password', currentPassword);
     this.fill('new-password', newPassword);
-    return this.click('change-password-submit');
+    this.fill('new-password-confirm', newPassword);
+    this.click('change-password-submit');
+    cy.wait('@passwordChanged').its('response.statusCode').should('eq', 200);
+    return this;
   }
 
   shouldHaveValue(hook, value) {

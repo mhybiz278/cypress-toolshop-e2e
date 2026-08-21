@@ -9,6 +9,7 @@ class RegisterPage extends BasePage {
     this.fill('last-name', user.lastName);
     this.fill('dob', user.dateOfBirth);
     this.fill('street', user.street);
+    this.fill('house_number', user.houseNumber);
     this.fill('postal_code', user.postalCode);
     this.fill('city', user.city);
     this.fill('state', user.state);

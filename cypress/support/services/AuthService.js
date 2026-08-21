@@ -23,6 +23,7 @@ class AuthService {
       last_name: user.lastName,
       address: {
         street: user.street,
+        house_number: user.houseNumber,
         city: user.city,
         state: user.state,
         country: user.country,
