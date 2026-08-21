@@ -1,0 +1,82 @@
+# Application under test — the open-source Toolshop demo app.
+#
+# This file exists so the suite is reproducible: `npm run app:up` gives you and
+# CI the same application, on the same ports, seeded with the same data, with no
+# dependency on a public demo instance being awake. Published images are used
+# rather than a build context, so a checkout of this repo is enough to run.
+#
+#   UI   http://localhost:4200
+#   API  http://localhost:8091
+#
+# Application source: https://github.com/testsmith-io/practice-software-testing
+
+name: toolshop
+
+services:
+  mariadb:
+    image: yobasystems/alpine-mariadb:10.6.11
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_USER: user
+      MYSQL_PASSWORD: root
+      MYSQL_DATABASE: toolshop
+    healthcheck:
+      test: ['CMD-SHELL', 'mysqladmin ping -h 127.0.0.1 -uroot -proot --silent']
+      interval: 5s
+      timeout: 5s
+      retries: 40
+      start_period: 20s
+
+  laravel-api:
+    image: testsmith/practice-software-testing-${SPRINT:-sprint5}-api
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    environment:
+      PHP_OPCACHE_VALIDATE_TIMESTAMPS: 1
+      DB_CONNECTION: mysql
+      DB_HOST: mariadb
+      DB_PORT: 3306
+      DB_DATABASE: toolshop
+      DB_USERNAME: root
+      DB_PASSWORD: root
+      DISABLE_LOGGING: ${DISABLE_LOGGING:-true}
+    volumes:
+      - laravel-app-code:/var/www
+
+  # nginx in front of php-fpm. This is the host the API specs talk to.
+  # The upstream project's own web image is published for arm64 only, so a
+  # stock nginx plus the app's vhost config is used instead — otherwise the
+  # stack cannot start on an amd64 CI runner.
+  web:
+    image: nginx:1.27-alpine
+    depends_on:
+      - laravel-api
+    ports:
+      - '8091:80'
+    volumes:
+      - laravel-app-code:/var/www:ro
+      - ./docker/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    healthcheck:
+      test: ['CMD-SHELL', 'wget -q -O /dev/null http://localhost/products || exit 1']
+      interval: 5s
+      timeout: 10s
+      retries: 60
+      start_period: 30s
+
+  angular-ui:
+    image: testsmith/practice-software-testing-${SPRINT:-sprint5}-ui
+    depends_on:
+      - web
+    ports:
+      - '4200:4200'
+    command: bash -c "ng serve --host 0.0.0.0 --port 4200"
+    healthcheck:
+      test: ['CMD-SHELL', 'wget -q -O /dev/null http://localhost:4200 || exit 1']
+      interval: 10s
+      timeout: 10s
+      retries: 60
+      start_period: 60s
+
+volumes:
+  laravel-app-code:
