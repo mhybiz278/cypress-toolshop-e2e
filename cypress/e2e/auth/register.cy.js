@@ -2,7 +2,9 @@ const { registerPage, loginPage, header } = require('../../support/pages');
 const { newUser } = require('../../support/helpers/dataFactory');
 
 describe('Registration', { tags: ['@auth', '@regression'] }, () => {
-  beforeEach(() => registerPage.visit());
+  beforeEach(() => {
+    registerPage.visit();
+  });
 
   it('registers a new customer who can then sign in', () => {
     const user = newUser();
@@ -15,9 +17,12 @@ describe('Registration', { tags: ['@auth', '@regression'] }, () => {
   });
 
   it('rejects an email that is already registered', () => {
-    const user = newUser({ email: Cypress.env('seededCustomerEmail') });
+    // Registered here rather than borrowed from the sample data: the test owns
+    // the collision it is asserting on, so it holds on an empty database too.
+    const existing = newUser();
+    cy.createUserByApi(existing);
 
-    registerPage.register(user);
+    registerPage.visit().register(newUser({ email: existing.email }));
 
     registerPage.el('register-error').should('be.visible');
     cy.location('pathname').should('eq', '/auth/register');

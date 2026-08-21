@@ -46,7 +46,7 @@ describe('My profile', { tags: ['@account', '@regression'] }, () => {
       cy.clearAllLocalStorage();
       cy.request({
         method: 'POST',
-        url: `${Cypress.env('apiUrl')}/users/login`,
+        url: `${Cypress.expose('apiUrl')}/users/login`,
         body: { email: user.email, password: newPassword },
         failOnStatusCode: false
       }).its('status').should('eq', 200);

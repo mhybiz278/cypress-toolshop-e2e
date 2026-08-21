@@ -8,7 +8,11 @@ describe('Password recovery', { tags: ['@auth', '@regression'] }, () => {
   });
 
   it('accepts a known email address', () => {
-    cy.getByTest('email').type(Cypress.env('seededCustomerEmail'));
+    const user = newUser();
+    cy.createUserByApi(user);
+
+    loginPage.visit().goToForgotPassword();
+    cy.getByTest('email').type(user.email);
     cy.getByTest('forgot-password-submit').click();
 
     cy.getByTest('forgot-password-form').should('exist');
