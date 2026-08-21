@@ -20,9 +20,12 @@ module.exports = defineConfig({
     embeddedScreenshots: true,
     inlineAssets: true,
     saveAllAttempts: false,
-    overwrite: false,
-    html: false,
-    json: true
+    overwrite: true,
+    html: true,
+    json: true,
+    // Keep the per-spec JSON after the HTML is built: CI turns it into the
+    // run summary that appears on the workflow page.
+    removeJsonsFolderAfterMerge: false
   },
 
   // Artefacts -------------------------------------------------------------
@@ -47,13 +50,14 @@ module.exports = defineConfig({
   watchForFileChanges: false,
   chromeWebSecurity: false,
 
-  env: {
-    apiUrl: API_URL,
-    // Seeded account shipped with the Toolshop sample data.
-    seededCustomerEmail: 'customer@practicesoftwaretesting.com',
-    seededCustomerPassword: 'welcome01',
-    seededAdminEmail: 'admin@practicesoftwaretesting.com',
-    seededAdminPassword: 'welcome01'
+  /**
+   * `expose` rather than `env`: these are public configuration values, and
+   * Cypress 15 deprecates `Cypress.env()` for them. There are no credentials
+   * here on purpose — every spec mints its own account over the API, so the
+   * suite ships with nothing to leak and nothing to keep in sync.
+   */
+  expose: {
+    apiUrl: API_URL
   },
 
   e2e: {
@@ -63,6 +67,7 @@ module.exports = defineConfig({
     experimentalRunAllSpecs: true,
     setupNodeEvents(on, config) {
       require('cypress-mochawesome-reporter/plugin')(on);
+      require('@cypress/grep/plugin').plugin(config);
 
       on('task', {
         log: (message) => { console.log(message); return null; },

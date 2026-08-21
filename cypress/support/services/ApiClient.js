@@ -10,7 +10,7 @@ class ApiClient {
     this.token = null;
   }
 
-  get baseUrl() { return Cypress.env('apiUrl'); }
+  get baseUrl() { return Cypress.expose('apiUrl'); }
 
   setToken(token) { this.token = token; return this; }
   clearToken() { this.token = null; return this; }
