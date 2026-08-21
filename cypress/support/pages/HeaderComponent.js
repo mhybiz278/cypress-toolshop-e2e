@@ -22,9 +22,32 @@ class HeaderComponent extends BasePage {
     return this.click(`nav-${category}`);
   }
 
-  /** @returns {Cypress.Chainable<number>} items currently in the cart badge */
+  /**
+   * The cart link and its badge are only rendered once the cart holds
+   * something, so an empty cart is an absent element rather than a zero — and
+   * the badge updates a moment after the request that changed it. Both are
+   * handled here, in a retrying assertion, so a spec never has to know either.
+   */
+  shouldHaveCartQuantity(expected) {
+    if (expected === 0) {
+      this.el('nav-cart').should('not.exist');
+      return this;
+    }
+    this.el('cart-quantity').should('have.text', String(expected));
+    return this;
+  }
+
+  /**
+   * A one-shot read for the rare case a spec needs the number itself rather
+   * than an assertion about it. Prefer `shouldHaveCartQuantity` — it retries.
+   *
+   * @returns {Cypress.Chainable<number>} items currently in the cart badge
+   */
   cartQuantity() {
-    return this.el('cart-quantity').invoke('text').then((t) => Number(t.trim() || 0));
+    return cy.get('body').then(($body) => {
+      const $badge = $body.find(this.selector('cart-quantity'));
+      return $badge.length ? Number($badge.text().trim() || 0) : 0;
+    });
   }
 
   shouldShowSignedIn() {

@@ -1,7 +1,9 @@
 const { productListPage } = require('../../support/pages');
 
 describe('Catalogue pagination', { tags: ['@catalogue', '@regression'] }, () => {
-  beforeEach(() => productListPage.visit().waitForResults());
+  beforeEach(() => {
+    productListPage.visit().waitForProducts();
+  });
 
   it('loads a different set of products on page two', () => {
     productListPage.productNames().then((firstPage) => {

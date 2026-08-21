@@ -8,6 +8,7 @@ class CartPage extends BasePage {
 
   setQuantityForRow(rowIndex, qty) {
     this.el('product-quantity').eq(rowIndex).clear().type(`${qty}`).blur();
+    cy.wait('@cartQuantityChanged');
     return this;
   }
 
@@ -16,7 +17,8 @@ class CartPage extends BasePage {
    * located structurally and isolated here — one brittle selector, one place.
    */
   removeRow(rowIndex) {
-    cy.get('table tbody tr').eq(rowIndex).find('.btn-danger, [class*="trash"], button').last().click();
+    cy.get('table tbody tr').eq(rowIndex).find('a.btn-danger').last().click();
+    cy.wait('@cartItemRemoved');
     return this;
   }
 
@@ -37,6 +39,19 @@ class CartPage extends BasePage {
 
   shouldContainProduct(name) {
     this.lineItems.should('contain.text', name);
+    return this;
+  }
+
+  /**
+   * Changing a quantity fires an update and then a refetch, so the total lands
+   * a moment after the request completes. A retrying assertion is the honest
+   * way to express "the total settles on this figure".
+   */
+  shouldHaveTotal(expected, delta = 0.01) {
+    this.el('cart-total').should(($el) => {
+      const actual = Number($el.text().replace(/[^0-9.]/g, ''));
+      expect(actual, 'cart total').to.be.closeTo(expected, delta);
+    });
     return this;
   }
 

@@ -2,52 +2,72 @@ const { productListPage } = require('../../support/pages');
 const { productService } = require('../../support/services');
 
 describe('Catalogue filters', { tags: ['@catalogue', '@regression'] }, () => {
-  beforeEach(() => productListPage.visit().waitForResults());
+  beforeEach(() => {
+    productListPage.visit().waitForProducts();
+  });
 
   it('narrows results to a single category', () => {
-    productService.categories().then((res) => {
-      const category = res.body.find((c) => !c.sub_categories || c.sub_categories.length === 0) || res.body[0];
+    // The category is taken from a product that is actually on the shelf.
+    // Picking the first entry in the reference data lands on a parent category
+    // that holds no products of its own, and the test would then pass against
+    // an empty grid — green, and asserting nothing.
+    productService.firstPurchasable().then(({ category }) => {
+      productService.listAll({ by_category: category.id }).then((inCategory) => {
+        const namesInCategory = inCategory.map((p) => p.name);
 
-      productListPage.filterByCategory(category.id);
+        productListPage.filterByCategory(category.id);
 
-      productService.list({ 'between[]': undefined, by_category: category.id }).then((api) => {
-        productListPage.products.should('have.length.at.most', api.body.data.length || 100);
+        productListPage.products.should('have.length.greaterThan', 0);
+        productListPage.productNames().then((rendered) => {
+          rendered.forEach((name) =>
+            expect(namesInCategory, `"${name}" belongs to ${category.name}`).to.include(name));
+        });
       });
-      productListPage.products.should('have.length.greaterThan', 0);
     });
   });
 
   it('narrows results to a single brand', () => {
-    productService.brands().then((res) => {
-      const brand = res.body[0];
+    productService.firstPurchasable().then(({ brand }) => {
+      productService.listAll({ by_brand: brand.id }).then((ofBrand) => {
+        const namesOfBrand = ofBrand.map((p) => p.name);
 
-      productListPage.filterByBrand(brand.id);
+        productListPage.filterByBrand(brand.id);
 
-      productListPage.products.should('have.length.greaterThan', 0);
+        productListPage.products.should('have.length.greaterThan', 0);
+        productListPage.productNames().then((rendered) => {
+          rendered.forEach((name) =>
+            expect(namesOfBrand, `"${name}" is made by ${brand.name}`).to.include(name));
+        });
+      });
     });
   });
 
-  it('combines a brand and a category filter', () => {
-    productService.brands().then((brandRes) => {
-      productService.categories().then((catRes) => {
-        productListPage.filterByBrand(brandRes.body[0].id);
-        productListPage.filterByCategory(catRes.body[0].id);
+  it('never shows a product outside both filters when they are combined', () => {
+    productService.firstPurchasable().then(({ brand, category }) => {
+      productService.listAll({ by_brand: brand.id }).then((ofBrand) => {
+        const namesOfBrand = ofBrand.map((p) => p.name);
 
-        // A combined filter must never widen the result set.
-        productListPage.products.its('length').should('be.gte', 0);
+        productListPage.filterByBrand(brand.id);
+        productListPage.filterByCategory(category.id);
+
+        // Adding a filter can only ever narrow. Anything rendered here that the
+        // brand filter alone would not return means the filters are not being
+        // combined — they are replacing one another.
+        productListPage.productNames().then((rendered) => {
+          rendered.forEach((name) =>
+            expect(namesOfBrand, `"${name}" survives the brand filter`).to.include(name));
+        });
       });
     });
   });
 
   it('clears a filter when it is unchecked', () => {
     productListPage.products.its('length').then((initial) => {
-      productService.brands().then((res) => {
-        const brandId = res.body[0].id;
+      productService.firstPurchasable().then(({ brand }) => {
+        productListPage.filterByBrand(brand.id);
+        productListPage.clearBrandFilter(brand.id);
 
-        productListPage.filterByBrand(brandId);
-        productListPage.el(`brand-${brandId}`).uncheck({ force: true });
-
-        productListPage.waitForResults().products.should('have.length', initial);
+        productListPage.products.should('have.length', initial);
       });
     });
   });

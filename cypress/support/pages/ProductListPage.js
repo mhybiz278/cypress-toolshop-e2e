@@ -1,34 +1,52 @@
 const BasePage = require('./BasePage');
+const { ATTR } = require('../selectors');
 
 class ProductListPage extends BasePage {
   constructor() { super('/'); }
 
-  get products() { return this.elStartsWith('product-'); }
+  /**
+   * A product card is the anchor whose hook is `product-{id}`.
+   *
+   * Restricting to `a` matters: `product-name`, `product-price` and
+   * `product-title` all share the same prefix, so a bare prefix match would
+   * count three elements per product and every length assertion in the
+   * catalogue specs would be quietly wrong.
+   */
+  get products() { return cy.get(`a[${ATTR}^="product-"]`); }
 
   search(term) {
     this.fill('search-query', term);
-    return this.click('search-submit');
+    this.click('search-submit');
+    return this.waitForState('search_completed');
   }
 
-  resetSearch() { return this.click('search-reset'); }
+  resetSearch() {
+    this.click('search-reset');
+    return this.waitForProducts();
+  }
 
   sortBy(value) {
     this.el('sort').select(value);
-    return this.waitForResults();
+    return this.waitForState('sorting_completed');
   }
 
   filterByCategory(categoryId) {
     this.el(`category-${categoryId}`).check({ force: true });
-    return this.waitForResults();
+    return this.waitForState('filter_completed');
   }
 
   filterByBrand(brandId) {
     this.el(`brand-${brandId}`).check({ force: true });
-    return this.waitForResults();
+    return this.waitForState('filter_completed');
   }
 
-  nextPage() { this.click('pagination-next'); return this.waitForResults(); }
-  previousPage() { this.click('pagination-prev'); return this.waitForResults(); }
+  clearBrandFilter(brandId) {
+    this.el(`brand-${brandId}`).uncheck({ force: true });
+    return this.waitForState('filter_completed');
+  }
+
+  nextPage() { this.click('pagination-next'); return this.waitForPage(); }
+  previousPage() { this.click('pagination-prev'); return this.waitForPage(); }
 
   openProductByName(name) {
     this.el('product-name').contains(name).click();
@@ -41,11 +59,31 @@ class ProductListPage extends BasePage {
   }
 
   /**
-   * The listing renders a state container whose data-test IS the state name,
-   * so waiting on 'loaded' is a real signal from the app rather than cy.wait().
+   * The listing renders a state container whose `data-test` value *is* the
+   * current state — `filter_completed`, `search_completed`,
+   * `sorting_completed`. Waiting on it is a real signal from the application
+   * rather than an arbitrary sleep.
    */
-  waitForResults() {
-    this.el('loaded', { timeout: 15000 }).should('exist');
+  waitForState(state) {
+    cy.get(`[${ATTR}="${state}"]`, { timeout: 15000 }).should('exist');
+    return this;
+  }
+
+  /**
+   * The state container is only stamped by a user action, so on first load the
+   * signal is the grid itself having rendered.
+   */
+  waitForProducts() {
+    this.products.should('have.length.greaterThan', 0);
+    return this;
+  }
+
+  /**
+   * Paging does not stamp the state container, so the signal is the products
+   * request the page fires. Aliased once in support/e2e.js.
+   */
+  waitForPage() {
+    cy.wait('@getProducts');
     return this;
   }
 

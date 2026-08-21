@@ -2,7 +2,9 @@ const { productListPage } = require('../../support/pages');
 const { productService } = require('../../support/services');
 
 describe('Product listing', { tags: ['@catalogue', '@smoke'] }, () => {
-  beforeEach(() => productListPage.visit().waitForResults());
+  beforeEach(() => {
+    productListPage.visit().waitForProducts();
+  });
 
   it('renders a page of products', () => {
     productListPage.products.should('have.length.greaterThan', 0);

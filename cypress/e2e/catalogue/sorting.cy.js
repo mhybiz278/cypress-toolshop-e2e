@@ -1,7 +1,9 @@
 const { productListPage } = require('../../support/pages');
 
 describe('Catalogue sorting', { tags: ['@catalogue', '@regression'] }, () => {
-  beforeEach(() => productListPage.visit().waitForResults());
+  beforeEach(() => {
+    productListPage.visit().waitForProducts();
+  });
 
   it('sorts by name A to Z', () => {
     productListPage.sortBy('name,asc');

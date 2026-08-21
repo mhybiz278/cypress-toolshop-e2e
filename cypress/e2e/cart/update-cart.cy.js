@@ -15,7 +15,7 @@ describe('Updating the cart', { tags: ['@cart', '@regression'] }, () => {
       cartPage.setQuantityForRow(0, 3);
 
       cartPage.linePrice(0).should('be.closeTo', Number(product.price) * 3, 0.01);
-      header.cartQuantity().should('eq', 3);
+      header.shouldHaveCartQuantity(3);
     });
   });
 
@@ -39,6 +39,6 @@ describe('Updating the cart', { tags: ['@cart', '@regression'] }, () => {
     cy.reload();
 
     cartPage.lineItems.should('have.length', 1);
-    header.cartQuantity().should('eq', 1);
+    header.shouldHaveCartQuantity(1);
   });
 });

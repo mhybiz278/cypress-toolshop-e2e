@@ -7,16 +7,18 @@ describe('Empty cart', { tags: ['@cart', '@regression'] }, () => {
     cy.visit('/');
   });
 
-  it('shows no line items before anything is added', () => {
-    header.goToCart();
-
-    cartPage.lineItems.should('have.length', 0);
+  it('does not offer a cart link until something is in the cart', () => {
+    header.el('nav-cart').should('not.exist');
+    header.cartQuantity().should('eq', 0);
   });
 
-  it('cannot proceed to checkout with an empty cart', () => {
-    header.goToCart();
+  it('shows no line items before anything is added', () => {
+    // Navigated directly: the header cart link is not rendered for an empty
+    // cart, and the route still has to behave if a customer bookmarks it.
+    cartPage.visit();
 
-    cartPage.el('proceed-1').should('satisfy', ($el) => $el.is(':disabled') || $el.length === 0);
+    cartPage.el('proceed-1').should('not.exist');
+    cy.get('body').find(cartPage.selector('product-title')).should('have.length', 0);
   });
 
   it('returns to the catalogue via continue shopping', () => {

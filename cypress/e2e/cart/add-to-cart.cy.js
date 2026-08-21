@@ -8,7 +8,7 @@ describe('Adding to the cart', { tags: ['@cart', '@smoke'] }, () => {
 
       productDetailPage.addToCart();
 
-      header.cartQuantity().should('eq', 1);
+      header.shouldHaveCartQuantity(1);
       header.goToCart();
       cartPage.shouldContainProduct(product.name);
     });
@@ -20,7 +20,7 @@ describe('Adding to the cart', { tags: ['@cart', '@smoke'] }, () => {
 
       productDetailPage.increaseQuantity(2).addToCart();
 
-      header.cartQuantity().should('eq', 3);
+      header.shouldHaveCartQuantity(3);
     });
   });
 
@@ -33,7 +33,7 @@ describe('Adding to the cart', { tags: ['@cart', '@smoke'] }, () => {
 
       header.goToCart();
       cartPage.shouldHaveRowCount(1);
-      header.cartQuantity().should('eq', 2);
+      header.shouldHaveCartQuantity(2);
     });
   });
 

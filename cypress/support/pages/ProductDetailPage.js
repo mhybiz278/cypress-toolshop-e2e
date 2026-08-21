@@ -5,7 +5,16 @@ class ProductDetailPage extends BasePage {
 
   visitById(id) { cy.visit(`/product/${id}`); return this; }
 
-  addToCart() { return this.click('add-to-cart'); }
+  /**
+   * Adding to the cart is asynchronous. Waiting for the application's own
+   * request to complete means a spec can navigate straight to the cart without
+   * racing it, and without an arbitrary sleep standing in for a real signal.
+   */
+  addToCart() {
+    this.click('add-to-cart');
+    cy.wait('@cartItemAdded').its('response.statusCode').should('be.oneOf', [200, 201]);
+    return this;
+  }
   addToFavourites() { return this.click('add-to-favorites'); }
 
   setQuantity(qty) {
