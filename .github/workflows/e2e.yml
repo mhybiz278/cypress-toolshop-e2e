@@ -5,12 +5,23 @@ on:
     branches: [main]
   pull_request:
   schedule:
-    # Nightly full regression against the deployed demo instance.
-    - cron: '0 17 * * *'   # 05:00 NZST
+    # Nightly full regression. 17:00 UTC is 05:00 NZST.
+    - cron: '0 17 * * *'
   workflow_dispatch:
+    inputs:
+      tags:
+        description: 'Tag expression to run, e.g. @smoke or @checkout'
+        required: false
+        default: ''
+
+# A second push to the same branch makes the first run's answer worthless.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   lint:
+    name: Lint
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -19,76 +30,97 @@ jobs:
       - run: npm ci
       - run: npm run lint
 
-  # API specs are fast and have no browser dependency, so they gate the
-  # expensive UI matrix: if the contract is broken, don't burn 4 containers.
-  api:
+  test:
+    name: Test
     runs-on: ubuntu-latest
     needs: lint
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with: { node-version: 20, cache: npm }
-      - name: Start application stack
-        run: docker compose up -d --wait
-      - uses: cypress-io/github-action@v6
-        with:
-          spec: cypress/e2e/api/**/*.cy.js
-          browser: electron
-        env:
-          CYPRESS_BASE_URL: http://localhost:4200
-          CYPRESS_API_URL: http://localhost:8091
 
-  e2e:
-    runs-on: ubuntu-latest
-    needs: api
-    strategy:
-      fail-fast: false
-      matrix:
-        # Split by suite rather than by arbitrary file count: a failure tells
-        # you which product area broke before you open the report.
-        suite: [auth, catalogue, cart, checkout, account]
-    steps:
-      - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with: { node-version: 20, cache: npm }
-      - name: Start application stack
-        run: docker compose up -d --wait
-      - uses: cypress-io/github-action@v6
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Cache the Cypress binary
+        uses: actions/cache@v4
         with:
-          spec: cypress/e2e/${{ matrix.suite }}/**/*.cy.js
-          browser: chrome
-        env:
-          CYPRESS_BASE_URL: http://localhost:4200
-          CYPRESS_API_URL: http://localhost:8091
+          path: ~/.cache/Cypress
+          key: cypress-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+      - name: Install the Cypress binary
+        run: npx cypress install
+
+      # One stack, one job. The application under test is roughly 6 GB of
+      # container images; a matrix of five runners would pull all of it five
+      # times over and spend more wall-clock on `docker pull` than the whole
+      # suite takes to run. The reasoning is written up under "CI" in the README.
+      - name: Start the application under test
+        run: npm run app:up
+
+      - name: Run the suite
+        run: |
+          if [ -n "${{ github.event.inputs.tags }}" ]; then
+            npx cypress run --browser chrome --expose grepTags="${{ github.event.inputs.tags }}"
+          else
+            npx cypress run --browser chrome
+          fi
+
+      - name: Summarise the run
+        if: always()
+        run: npm run summary
+
+      - name: Application logs
+        if: failure()
+        run: docker compose logs --tail 200
+
+      - name: Upload the HTML report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: html-report
+          path: cypress/reports
+          retention-days: 14
+
       - name: Upload failure artefacts
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: artifacts-${{ matrix.suite }}
+          name: failure-artefacts
           path: cypress/artifacts
           retention-days: 7
-      - name: Upload raw report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: report-${{ matrix.suite }}
-          path: cypress/reports/*.json
-          retention-days: 7
 
-  report:
+      - name: Stop the application under test
+        if: always()
+        run: npm run app:down
+
+  publish-report:
+    name: Publish report
     runs-on: ubuntu-latest
-    needs: e2e
-    if: always()
+    needs: test
+    if: always() && github.event_name != 'pull_request'
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with: { node-version: 20, cache: npm }
-      - run: npm ci
       - uses: actions/download-artifact@v4
-        with: { pattern: report-*, path: cypress/reports, merge-multiple: true }
-      - run: npm run report
-      - uses: actions/upload-artifact@v4
         with:
           name: html-report
-          path: cypress/reports/html
-          retention-days: 14
+          path: report
+
+      - name: Prepare the site
+        run: |
+          mkdir -p site
+          cp report/index.html site/index.html
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+      - id: deploy
+        uses: actions/deploy-pages@v4

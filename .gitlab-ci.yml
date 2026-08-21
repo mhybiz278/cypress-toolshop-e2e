@@ -1,9 +1,12 @@
-# Mirrors .github/workflows/e2e.yml — included so the framework can drop into
-# a GitLab estate unchanged.
-stages: [lint, api, e2e, report]
+# Mirrors .github/workflows/e2e.yml so the framework can drop into a GitLab
+# estate unchanged. Same shape, same reasoning: one job boots the application
+# and runs the suite against it, because the images are far too large to pull
+# once per parallel runner.
+
+stages: [lint, test]
 
 default:
-  image: cypress/included:14.5.0
+  image: cypress/included:15.21.0
   cache:
     key:
       files: [package-lock.json]
@@ -12,44 +15,34 @@ default:
     - npm ci --cache .npm --prefer-offline
 
 variables:
-  CYPRESS_BASE_URL: http://frontend:4200
-  CYPRESS_API_URL: http://api:8091
+  CYPRESS_BASE_URL: http://angular-ui:4200
+  CYPRESS_API_URL: http://web:80
 
 lint:
   stage: lint
   script: [npm run lint]
 
-api-contract:
-  stage: api
-  script:
-    - npx cypress run --spec 'cypress/e2e/api/**/*.cy.js' --browser electron
-  artifacts:
-    when: always
-    paths: [cypress/reports/]
-    expire_in: 1 week
-
 e2e:
-  stage: e2e
-  needs: [api-contract]
-  parallel:
-    matrix:
-      - SUITE: [auth, catalogue, cart, checkout, account]
+  stage: test
+  services:
+    - name: yobasystems/alpine-mariadb:10.6.11
+      alias: mariadb
+    - name: testsmith/practice-software-testing-sprint5-api
+      alias: laravel-api
+    - name: testsmith/practice-software-testing-sprint5-ui
+      alias: angular-ui
   script:
-    - npx cypress run --spec "cypress/e2e/${SUITE}/**/*.cy.js" --browser chrome
+    - npx cypress run --browser chrome
+  after_script:
+    - npm run summary
   artifacts:
     when: always
-    paths:
-      - cypress/artifacts/
-      - cypress/reports/
     expire_in: 1 week
-    reports:
-      junit: cypress/reports/junit/*.xml
+    paths:
+      - cypress/reports/
+      - cypress/artifacts/
 
-merge-report:
-  stage: report
-  when: always
-  needs: [e2e]
-  script: [npm run report]
-  artifacts:
-    paths: [cypress/reports/html]
-    expire_in: 1 month
+nightly:
+  extends: e2e
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule"
