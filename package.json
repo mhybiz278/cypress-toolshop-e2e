@@ -6,7 +6,7 @@
   "license": "MIT",
   "private": true,
   "scripts": {
-    "app:up": "docker compose up -d --wait && npm run app:seed",
+    "app:up": "bash scripts/start-app.sh",
     "app:seed": "docker compose exec -T laravel-api php artisan migrate:fresh --seed --force",
     "app:down": "docker compose down -v",
     "cy:open": "cypress open",
