@@ -50,4 +50,11 @@ beforeEach(() => {
   // Account writes, for the same reason: assert on the outcome only once the
   // application has actually been told about the change.
   cy.intercept('POST', '**/users/change-password').as('passwordChanged');
+
+  // The profile form is populated asynchronously from `GET /users/me`, and the
+  // favourites list from `GET /favorites`. Both are aliased so a page object can
+  // wait on the application's own signal instead of on a sleep.
+  cy.intercept('GET', '**/users/me').as('profileLoaded');
+  cy.intercept('GET', '**/favorites*').as('favouritesLoaded');
+  cy.intercept('PUT', '**/users/**').as('profileUpdated');
 });

@@ -9,7 +9,7 @@ describe('Catalogue pagination', { tags: ['@catalogue', '@regression'] }, () => 
     productListPage.productNames().then((firstPage) => {
       productListPage.nextPage();
 
-      productListPage.productNames().should((secondPage) => {
+      productListPage.shouldHaveProductNames((secondPage) => {
         expect(secondPage).to.have.length.greaterThan(0);
         expect(secondPage).to.not.deep.equal(firstPage);
       });
@@ -21,7 +21,9 @@ describe('Catalogue pagination', { tags: ['@catalogue', '@regression'] }, () => 
       productListPage.nextPage();
       productListPage.previousPage();
 
-      productListPage.productNames().should('deep.equal', firstPage);
+      productListPage.shouldHaveProductNames((backAgain) => {
+        expect(backAgain).to.deep.equal(firstPage);
+      });
     });
   });
 
@@ -30,7 +32,8 @@ describe('Catalogue pagination', { tags: ['@catalogue', '@regression'] }, () => 
     // boundary record rather than an obvious failure.
     productListPage.productNames().then((firstPage) => {
       productListPage.nextPage();
-      productListPage.productNames().should((secondPage) => {
+
+      productListPage.shouldHaveProductNames((secondPage) => {
         const overlap = secondPage.filter((n) => firstPage.includes(n));
         expect(overlap, `products duplicated across pages: ${overlap}`).to.be.empty;
       });

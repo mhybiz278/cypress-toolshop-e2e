@@ -92,6 +92,26 @@ class ProductListPage extends BasePage {
     return this.el('product-name').then(($els) => Cypress._.map($els, (e) => e.innerText.trim()));
   }
 
+  /**
+   * Assert over the visible product names *with retries*.
+   *
+   * `productNames()` ends in `.then()`, which Cypress never retries: it
+   * snapshots the DOM once and any `.should()` chained after it re-runs the
+   * assertion against that frozen array, never re-querying the page. After
+   * `nextPage()` that snapshot is taken when the products *response* lands but
+   * before Angular has re-rendered, so the assertion compares page one with
+   * page one and the suite reports a pagination defect that is not there.
+   *
+   * `cy.get(...).should(fn)` re-queries on every attempt, which is what
+   * anything that settles asynchronously needs.
+   */
+  shouldHaveProductNames(assertFn) {
+    this.el('product-name').should(($els) => {
+      assertFn(Cypress._.map($els, (e) => e.innerText.trim()));
+    });
+    return this;
+  }
+
   /** @returns {Cypress.Chainable<number[]>} visible prices as numbers, in order */
   productPrices() {
     return this.el('product-price').then(($els) =>

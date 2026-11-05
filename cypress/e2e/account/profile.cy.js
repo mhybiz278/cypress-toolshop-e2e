@@ -31,7 +31,9 @@ describe('My profile', { tags: ['@account', '@regression'] }, () => {
 
   it('will not save an empty mandatory field', () => {
     profilePage.el('first-name').clear();
-    profilePage.saveProfile();
+    profilePage.submitProfile();
+
+    profilePage.shouldRejectField('first-name');
 
     cy.reload();
     profilePage.el('first-name').should('not.have.value', '');
