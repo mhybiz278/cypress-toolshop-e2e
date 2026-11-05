@@ -23,6 +23,7 @@ The suite runs against a real Toolshop instance that `docker compose` brings up 
 - 🐛 **[Defect log](docs/DEFECT-LOG.md)** — six findings, with reproduction steps, root-cause analysis and severity rationale
 - 📄 **[Latest HTML report](https://mhybiz278.github.io/cypress-toolshop-e2e/)** — published from every run on `main`
 - 🧭 **[Test strategy](docs/TEST-STRATEGY.md)** · **[Architecture](docs/ARCHITECTURE.md)**
+- 🩻 **[The same suite in Playwright + Python](https://github.com/mhybiz278/playwright-toolshop-e2e)** — the same application tested again in a different stack, with a [written comparison](https://github.com/mhybiz278/playwright-toolshop-e2e/blob/main/docs/CYPRESS-VS-PLAYWRIGHT.md) of how each framework's retry model behaves
 
 ## Contents
 
