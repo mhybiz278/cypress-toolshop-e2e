@@ -257,6 +257,6 @@ Being straight about what this doesn't do:
 I work daily in a large production Cypress suite as an SDET. That code belongs to my employer, so this is the same thinking rebuilt from scratch on a public application — architecture, data strategy, CI, defect reporting, and the reasoning I'd bring to a code review.
 
 **Mhyli Jade C. Bizares** — QA Engineer & SDET, Auckland NZ
-[Portfolio](https://mj-bizares-qa.netlify.app/) · [LinkedIn](https://www.linkedin.com/in/mhyli-jade/)
+[Portfolio](https://mj.bizares.net/) · [LinkedIn](https://www.linkedin.com/in/mhyli-jade/)
 
 MIT licensed. The application under test is the property of its authors.
